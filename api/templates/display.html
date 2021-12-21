@@ -1,0 +1,26 @@
+
+{% extends "base.html" %}
+{% block content %}
+<!-- map -->
+
+<h3 style="text-align:center;">{{vars['Title_line1']}}</h3>
+<h5 style="text-align:center;">{{vars['Title_line2']}}</h5>
+
+<div style="margin-left: 1px; margin-right: 1px;">
+  <iframe src="{{ url_for('show_map') }}" width="98%" height="90%" frameborder="3" style="position: absolute;"></iframe>
+
+<h1 style="position:absolute;
+bottom:1px;
+right:800px;
+margin-left: 20px;
+margin-bottom: 5px;
+color: rgb(102, 130, 148);
+background:whitesmoke;
+font-family: Times New Roman Times, serif;
+font-style:oblique;
+font-weight: 900;
+font-size: 20px;
+z-index: 1;"> Map by IX Power</h1>
+</div>
+        
+{% endblock %}

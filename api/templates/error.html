@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Error Encountered{% endblock %}
+{% block content %}
+<!-- error handling -->
+<div class="container">
+  <div class="row"> 
+    <div class="col-lg-12 text-left">
+      <h2>Error!</h2>
+      <h3>Something with {{culprit}} has gone wrong.</h3>
+      <h4>{{details}}</h4>
+    </div>
+  </div>
+</div>
+{% endblock %}

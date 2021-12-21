@@ -10,6 +10,7 @@
 # created with streamlit and folium
 
 # import some libraries
+from sys import float_repr_style
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -25,13 +26,38 @@ import json
 import requests
 import tarfile
 import datetime as dt
+import time as time
+from time import sleep
 from flask import Flask, render_template, request, redirect, url_for, send_file, make_response
-
+from functools import wraps, update_wrapper
+from datetime import datetime
+from pathlib import Path
 
 app = Flask(__name__)
 app.config['TEMPLATES_AUTO_RELOAD'] = True
 app.vars = {}
 
+newdata = True  # set True to get new data, draw new map
+lastmap = time.mktime((dt.datetime.now()).timetuple())
+print ('Now:',lastmap)
+
+def check_map():
+    global newdata, lastmap
+
+    # check to draw map
+    thismap = time.mktime((dt.datetime.now()).timetuple())
+    nextmap = lastmap + 300.
+    if (thismap > nextmap):
+        newdata = True
+    else:
+        newdata = False
+    
+    print('lastmap',lastmap)
+    print('thismap',thismap)
+    print('nextmap',nextmap)
+    print('newdata',newdata)
+        
+    return
 
 def get_confirm_token(response):
     for key, value in response.cookies.items():
@@ -55,6 +81,8 @@ def get_weather_data():
     # We create a downloads directory within the streamlit static asset directory
     # and we write output files to it
 
+    print('getting weather data')
+
     #get latest wx warnings from NWS
     url='https://tgftp.nws.noaa.gov/SL.us008001/DF.sha/DC.cap/DS.WWA/current_all.tar.gz'
 
@@ -72,10 +100,15 @@ def get_weather_data():
     destination =  str(dest_path)+'current_all.tar.gz'
 
     save_response_content(response,destination)
-    
+
+    sleep(30)
+
+    print('got weather data')
+
     return destination,dest_path
 
 def read_weather_data(destination,dest_path):
+    global newdata
 
     print('Destination=',destination)
 
@@ -101,13 +134,21 @@ def read_weather_data(destination,dest_path):
 
     print(weather_df.head(10))
 
+    newdata = False
+
+    print ('read weather data')
+
     return weather_df
 
 
 def render_map(weather_df):
+    global lastmap
 
+    print('drawing map',lastmap,newdata)
+    
     # get the current time in UTC (constant reference timezone)
     timestamp = dt.datetime.now(dt.timezone.utc).isoformat(timespec='minutes')
+    print('timestamp:',timestamp)
     #st.write(timestamp[0:10], timestamp[11:16],'UTC')
     #st.write('DOWNLOADS_PATH',DOWNLOADS_PATH)
 
@@ -191,6 +232,10 @@ def render_map(weather_df):
     # Add minimap
     MiniMap(tile_layer='stamenterrain',zoom_level_offset=-5).add_to(mbr)
 
+    lastmap = time.mktime((dt.datetime.now()).timetuple())
+
+    print('drew map; lastmap=',lastmap)
+
     return mbr
 
 
@@ -207,32 +252,80 @@ def save_map(mbr):
     mbr.save('wxwarning.html')
 
     #st.write('Done')
+    print('saved map')
 
-    return 
+    return 'wxwarning.html'
+
+
+
+def nocache(view):
+    @wraps(view)
+    def no_cache(*args, **kwargs):
+        response = make_response(view(*args, **kwargs))
+        response.headers['Last-Modified'] = datetime.now()
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '-1'
+        return response
+        
+    return update_wrapper(no_cache, view)
+
+
+
+@app.route('/maps/map.html')
+@nocache
+def show_map():
+    map_path = os.path('./wxwarning.html')
+    print("show map")
+    print(map_path)
+    map_file = Path(map_path)
+    if os.path.exists('wxwarning.html'):
+        return send_file(map_path)
+    else:
+        return render_template('error.html', culprit='map file', details="the map file couldn't be loaded")
+
+    pass
+
+
+
 
 @app.route('/wxwarning.html')
 def map_driver():
+    global newdata
 
-    destination,dest_path = get_weather_data()
+    if (newdata):
 
-    print('Destination:',destination)
-    print('Dest_path:',dest_path)
+        print('starting newdata=',newdata)
+        destination,dest_path = get_weather_data()
+
+        print('Destination:',destination)
+        print('Dest_path:',dest_path)
+    
     #check that file exists:
  
-    if os.path.exists(destination):
+        if os.path.exists(destination):
 
-        weather_df = read_weather_data(destination,dest_path)
+            weather_df = read_weather_data(destination,dest_path)
 
+        else:
+
+            print('Error:',destination,'not found')
+            exit()
+
+        sleep (15)
+
+        wxmap = render_map(weather_df)
+
+        save_map(wxmap)
+
+        render_template('display.html')
+
+        newdata = False
+    
     else:
-
-        print('Error:',destination,'not found')
-        exit()
-
-    wxmap = render_map(weather_df)
-
-    save_map(wxmap)
-
-    return
+        
+        check_map()
+        print('Checked map, newdata:',newdata)
 
 @app.route('/')
 def main():
@@ -241,11 +334,16 @@ def main():
 
 #### main program
 
-newdata = True
+#newdata = True
 
-if (newdata):
-    map_driver()
-else:
-    print ('Error, must use newdata=True')
-    exit()
+
+#if (newdata):
+#map_driver()
+
+if __name__ == "__main__":
+    app.run(host='0.0.0.0', port=8000)
+
+#else:
+#    print ('Error, must use newdata=True')
+#    exit()
 
