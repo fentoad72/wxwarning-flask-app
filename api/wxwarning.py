@@ -39,7 +39,7 @@ app.vars = {}
 
 newdata = True  # set True to get new data, draw new map
 lastmap = time.mktime((dt.datetime.now()).timetuple())
-print ('Now:',lastmap)
+print ('Now:',lastmap,newdata)
 
 def check_map():
     global newdata, lastmap
@@ -108,7 +108,6 @@ def get_weather_data():
     return destination,dest_path
 
 def read_weather_data(destination,dest_path):
-    global newdata
 
     print('Destination=',destination)
 
@@ -134,15 +133,13 @@ def read_weather_data(destination,dest_path):
 
     print(weather_df.head(10))
 
-    newdata = False
-
     print ('read weather data')
 
     return weather_df
 
 
 def render_map(weather_df):
-    global lastmap
+    global lastmap,newdata
 
     print('drawing map',lastmap,newdata)
     
@@ -286,12 +283,28 @@ def show_map():
 
     pass
 
+@app.route('/get_logo')
+def get_logo():
+  logo_path = os.path('./static/img/logo.png' )
+  print("show logo")
+  print(logo_path)
+  logo_file = Path(logo_path)
+  if logo_file.exists():
+    return send_file(logo_path)
+  else:
+    return render_template('error.html', culprit='logo file', details="the logo file couldn't be loaded")
+
+  pass
 
 
-
-@app.route('/wxwarning.html')
+@app.route('/wxwarning.html', methods=['GET'])
 def map_driver():
     global newdata
+
+    if request.method == 'GET':
+        newdata=True
+        
+    print('map_driver',newdata)
 
     if (newdata):
 
@@ -326,6 +339,9 @@ def map_driver():
         
         check_map()
         print('Checked map, newdata:',newdata)
+    
+    return
+
 
 @app.route('/')
 def main():
@@ -333,12 +349,6 @@ def main():
 
 
 #### main program
-
-#newdata = True
-
-
-#if (newdata):
-#map_driver()
 
 if __name__ == "__main__":
     app.run(host='0.0.0.0', port=8000)
