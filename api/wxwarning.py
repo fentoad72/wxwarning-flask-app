@@ -39,6 +39,8 @@ app.vars = {}
 
 newdata = True  # set True to get new data, draw new map
 lastmap = time.mktime((dt.datetime.now()).timetuple())
+lastmap = 0 # map will run on first load
+
 print ('Now:',lastmap,newdata)
 
 def check_map():
@@ -51,6 +53,7 @@ def check_map():
         newdata = True
     else:
         newdata = False
+        print('too soon for new map',lastmap,thismap,nextmap)
         sleep(60)
     
     print('lastmap',lastmap)
@@ -198,7 +201,7 @@ def render_map(weather_df):
 
 
     #create a b/w map of CONUS
-    mbr = fl.Map(location=[40.0,-95.0],zoom_start=4,tiles="cartodbpositron")
+    mbr = fl.Map(location=[40.0,-95.0],zoom_start=4,tiles="Stamen Toner")
 
     colormap = cm.linear.Set1_09.scale(min_wxwarnings,max_wxwarnings).to_step(len(set(weather_df['PROD_ID'])))
 
@@ -302,8 +305,9 @@ def get_logo():
 def map_driver():
     global newdata
 
+### could put a call to check_map here
     if request.method == 'GET':
-        newdata=True
+        check_map()
 
     print('map_driver',newdata)
 
