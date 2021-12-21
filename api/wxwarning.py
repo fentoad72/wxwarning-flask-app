@@ -51,6 +51,7 @@ def check_map():
         newdata = True
     else:
         newdata = False
+        sleep(60)
     
     print('lastmap',lastmap)
     print('thismap',thismap)
@@ -303,7 +304,7 @@ def map_driver():
 
     if request.method == 'GET':
         newdata=True
-        
+
     print('map_driver',newdata)
 
     if (newdata):
