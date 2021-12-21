@@ -198,7 +198,7 @@ def render_map(weather_df):
 
 
     #create a b/w map of CONUS
-    mbr = fl.Map(location=[40.0,-95.0],zoom_start=4,tiles="Stamen Toner")
+    mbr = fl.Map(location=[40.0,-95.0],zoom_start=4,tiles="cartodbpositron")
 
     colormap = cm.linear.Set1_09.scale(min_wxwarnings,max_wxwarnings).to_step(len(set(weather_df['PROD_ID'])))
 
